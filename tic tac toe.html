@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tic Tac Toe with Winning Lines</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, black 0%, black 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    color: white;
+  }
+  .container {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2rem;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(51, 8, 103, 0.5);
+    text-align: center;
+    width: 320px;
+  }
+  h1 {
+    margin-bottom: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  #status {
+    margin-bottom: 1.5rem;
+    font-size: 1.2rem;
+    height: 24px;
+    position: relative;
+    z-index: 2;
+  }
+  .board {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 80px);
+    grid-template-rows: repeat(3, 80px);
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+  .cell {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    font-size: 3rem;
+    font-weight: 700;
+    color: #330867;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.3s ease;
+    position: relative;
+    z-index: 1;
+  }
+  .cell:hover {
+    background-color: rgba(255, 255, 255, 0.35);
+  }
+  .cell.disabled {
+    cursor: default;
+    pointer-events: none;
+    color: white;
+  }
+  .win-line {
+    position: absolute;
+    background: purple;
+    border-radius: 8px;
+    z-index: 2;
+    /* lines will have width and height based on orientation */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  /* Horizontal lines */
+  .win-line.horizontal {
+    height: 8px;
+    width: 260px;
+    left: 10px;
+  }
+  /* Vertical lines */
+  .win-line.vertical {
+    width: 8px;
+    height: 260px;
+    top: 10px;
+  }
+  /* Diagonal lines */
+  .win-line.diagonal {
+    width: 12px;
+    height: 380px; /* slightly longer diagonal */
+    top: -60px;
+    left: 50%;
+    transform-origin: center;
+  }
+  .win-line.diagonal.desc {
+    transform: translateX(-50%) rotate(45deg);
+  }
+  .win-line.diagonal.asc {
+    transform: translateX(-50%) rotate(-45deg);
+  }
+
+  /* Positions for horizontal lines (row 0,1,2) */
+  .win-line.row0 {
+    top: 44px; /* center of first row */
+  }
+  .win-line.row1 {
+    top: 134px; /* center of second row */
+  }
+  .win-line.row2 {
+    top: 224px; /* center of third row */
+  }
+
+  /* Positions for vertical lines (col 0,1,2) */
+  .win-line.col0 {
+    left: 44px; /* center of first column */
+  }
+  .win-line.col1 {
+    left: 134px; /* center of second column */
+  }
+  .win-line.col2 {
+    left: 224px; /* center of third column */
+  }
+
+  button {
+    background: #330867;
+    border: none;
+    color: white;
+    padding: 0.7rem 1.8rem;
+    font-weight: 700;
+    border-radius: 12px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(51, 8, 103, 0.5);
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    transition: background-color 0.3s ease;
+    position: relative;
+    z-index: 2;
+  }
+  button:hover,
+  button:focus {
+    background-color: #562889;
+    outline: none;
+  }
+  @media (max-width: 360px) {
+    .board {
+      grid-template-columns: repeat(3, 70px);
+      grid-template-rows: repeat(3, 70px);
+      gap: 8px;
+    }
+    .cell {
+      font-size: 2.5rem;
+    }
+    .container {
+      width: 90vw;
+      padding: 1.5rem;
+    }
+    .win-line.horizontal, .win-line.vertical {
+      width: calc(3*70px + 2*8px + 2*8px);
+      height: 6px;
+    }
+    .win-line.vertical {
+      width: 6px;
+      height: calc(3*70px + 2*8px + 2*8px);
+    }
+    .win-line.row0 {
+      top: 38px;
+    }
+    .win-line.row1 {
+      top: 110px;
+    }
+    .win-line.row2 {
+      top: 182px;
+    }
+    .win-line.col0 {
+      left: 38px;
+    }
+    .win-line.col1 {
+      left: 110px;
+    }
+    .win-line.col2 {
+      left: 182px;
+    }
+  }
+</style>
+</head>
+<body>
+  <div class="container" role="main" aria-label="Tic Tac Toe game with winning lines">
+    <h1>Tic Tac Toe</h1>
+    <div id="status" aria-live="polite" aria-atomic="true"></div>
+    <div class="board" role="grid" aria-label="Tic Tac Toe board">
+      <div class="cell" role="gridcell" tabindex="0" data-index="0" aria-label="Cell 1"></div>
+      <div class="cell" role="gridcell" tabindex="0" data-index="1" aria-label="Cell 2"></div>
+      <div class="cell" role="gridcell" tabindex="0" data-index="2" aria-label="Cell 3"></div>
+      <div class="cell" role="gridcell" tabindex="0" data-index="3" aria-label="Cell 4"></div>
+      <div class="cell" role="gridcell" tabindex="0" data-index="4" aria-label="Cell 5"></div>
+      <div class="cell" role="gridcell" tabindex="0" data-index="5" aria-label="Cell 6"></div>
+      <div class="cell" role="gridcell" tabindex="0" data-index="6" aria-label="Cell 7"></div>
+      <div class="cell" role="gridcell" tabindex="0" data-index="7" aria-label="Cell 8"></div>
+      <div class="cell" role="gridcell" tabindex="0" data-index="8" aria-label="Cell 9"></div>
+      <!-- Lines for highlighting winning combos -->
+      <div class="win-line horizontal row0" aria-hidden="true"></div>
+      <div class="win-line horizontal row1" aria-hidden="true"></div>
+      <div class="win-line horizontal row2" aria-hidden="true"></div>
+      <div class="win-line vertical col0" aria-hidden="true"></div>
+      <div class="win-line vertical col1" aria-hidden="true"></div>
+      <div class="win-line vertical col2" aria-hidden="true"></div>
+      <div class="win-line diagonal asc" aria-hidden="true"></div>
+      <div class="win-line diagonal desc" aria-hidden="true"></div>
+    </div>
+    <button id="reset-btn" aria-label="Reset game">Reset</button>
+  </div>
+
+<script>
+  (() => {
+    const statusDisplay = document.getElementById('status');
+    const cells = Array.from(document.querySelectorAll('.cell'));
+    const resetBtn = document.getElementById('reset-btn');
+    const boardElement = document.querySelector('.board');
+    const winLines = {
+      horizontal: {
+        0: boardElement.querySelector('.win-line.horizontal.row0'),
+        1: boardElement.querySelector('.win-line.horizontal.row1'),
+        2: boardElement.querySelector('.win-line.horizontal.row2'),
+      },
+      vertical: {
+        0: boardElement.querySelector('.win-line.vertical.col0'),
+        1: boardElement.querySelector('.win-line.vertical.col1'),
+        2: boardElement.querySelector('.win-line.vertical.col2'),
+      },
+      diagonal: {
+        asc: boardElement.querySelector('.win-line.diagonal.asc'),
+        desc: boardElement.querySelector('.win-line.diagonal.desc'),
+      }
+    };
+
+    let board = ["", "", "", "", "", "", "", "", ""];
+    let currentPlayer = "X";
+    let isGameActive = true;
+
+    const winningConditions = [
+      {combo: [0,1,2], line: {type: 'horizontal', index: 0}},
+      {combo: [3,4,5], line: {type: 'horizontal', index: 1}},
+      {combo: [6,7,8], line: {type: 'horizontal', index: 2}},
+      {combo: [0,3,6], line: {type: 'vertical', index: 0}},
+      {combo: [1,4,7], line: {type: 'vertical', index: 1}},
+      {combo: [2,5,8], line: {type: 'vertical', index: 2}},
+      {combo: [0,4,8], line: {type: 'diagonal', index: 'desc'}},
+      {combo: [2,4,6], line: {type: 'diagonal', index: 'asc'}}
+    ];
+
+    function updateStatus(message) {
+      statusDisplay.textContent = message;
+    }
+
+    function hideAllLines() {
+      Object.values(winLines.horizontal).forEach(el => el.style.opacity = 0);
+      Object.values(winLines.vertical).forEach(el => el.style.opacity = 0);
+      Object.values(winLines.diagonal).forEach(el => el.style.opacity = 0);
+    }
+
+    function showLine(line) {
+      if (!line) return;
+      const {type, index} = line;
+      if(type === 'horizontal' || type === 'vertical') {
+        winLines[type][index].style.opacity = '1';
+      } else if(type === 'diagonal') {
+        winLines.diagonal[index].style.opacity = '1';
+      }
+    }
+
+    function handleResultValidation() {
+      let roundWon = false;
+      let winningLine = null;
+      for (let cond of winningConditions) {
+        const [a,b,c] = cond.combo;
+        if (board[a] && board[a] === board[b] && board[b] === board[c]) {
+          roundWon = true;
+          winningLine = cond.line;
+          break;
+        }
+      }
+      if (roundWon) {
+        updateStatus(`Player ${currentPlayer} has won!`);
+        isGameActive = false;
+        disableCells();
+        showLine(winningLine);
+        return;
+      }
+      if (!board.includes("")) {
+        updateStatus(`It's a draw!`);
+        isGameActive = false;
+        disableCells();
+        hideAllLines();
+        return;
+      }
+      currentPlayer = currentPlayer === "X" ? "O" : "X";
+      updateStatus(`Player ${currentPlayer}'s turn`);
+      hideAllLines();
+    }
+
+    function disableCells() {
+      cells.forEach(cell => {
+        cell.classList.add('disabled');
+        cell.setAttribute('aria-disabled', 'true');
+      });
+    }
+
+    function enableCells() {
+      cells.forEach(cell => {
+        cell.classList.remove('disabled');
+        cell.removeAttribute('aria-disabled');
+      });
+    }
+
+    function userAction(cell, index) {
+      if (board[index] !== "" || !isGameActive) {
+        return;
+      }
+      board[index] = currentPlayer;
+      cell.textContent = currentPlayer;
+      handleResultValidation();
+    }
+
+    function resetGame() {
+      board = ["", "", "", "", "", "", "", "", ""];
+      isGameActive = true;
+      currentPlayer = "X";
+      cells.forEach(cell => (cell.textContent = ""));
+      updateStatus(`Player ${currentPlayer}'s turn`);
+      enableCells();
+      hideAllLines();
+    }
+
+    cells.forEach((cell, index) => {
+      cell.addEventListener('click', () => userAction(cell, index));
+      cell.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          userAction(cell, index);
+        }
+      });
+    });
+
+    resetBtn.addEventListener('click', resetGame);
+
+    // Initialize
+    updateStatus(`Player ${currentPlayer}'s turn`);
+    hideAllLines();
+  })();
+</script>
+</body>
+</html>
+
+```
